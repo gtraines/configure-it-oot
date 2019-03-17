@@ -1,0 +1,11 @@
+The steps to correctly install and configure wicd-curses on Raspbian are:
+1) sudo apt-get install wicd-curses
+2) sudo systemctl disable dhcpcd
+3) sudo /etc/init.d/dhcpcd stop
+4) sudo wicd-curses
+
+In /etc/rcX.d (where X is a number or S)
+sudo mkdir DISABLED
+sudo mv K01dhcpcd DISABLED/
+OR sudo mv S01dhcpcd DISABLED/
+
