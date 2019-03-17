@@ -3,8 +3,8 @@ Description=Blink Service
 After=multi-user.target
 
 [Service]
-Type=idle
-ExecStart=bash /home/robot1/configure-it-oot/startup/systemd/blink_service.sh
+Type=oneshot
+ExecStart=/bin/bash /home/robot1/configure-it-oot/startup/systemd/blink_service.sh
 
 [Install]
 WantedBy=multi-user.target
