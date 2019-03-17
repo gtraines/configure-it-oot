@@ -1,3 +1,6 @@
+CHECK LOG LOCATION:
+/var/log
+
 SYSTEMD
 
 systemd provides a standard process for controlling 
