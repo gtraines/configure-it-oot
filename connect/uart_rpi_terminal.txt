@@ -1,0 +1,18 @@
+# RPI3 UART 
+# Bluetooth UART device: /dev/ttyAMA0
+# Pin 8+10 UART= /dev/ttyS0
+
+# In /boot/config.txt:
+# enable_uart=1
+
+# Show all devices
+ls -l /dev
+
+# serial0 -> ttyS0
+# serial1 -> ttyAMA0
+
+# "If you are using the serial port for anything other than
+# the console, you will need to disable GETTY":
+
+sudo systemctl stop serial-getty@tty0.service
+sudo systemctl disable serial-getty@tty0.service
