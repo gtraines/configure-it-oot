@@ -1,4 +1,6 @@
 import os
+import sys
+import argparse
 import contextlib
 import time
 from fabric import Connection, Config
@@ -177,15 +179,20 @@ class RemoteCxn:
 
 class RobotCxn(RemoteCxn):
 
-    def exec_in_robot1_directory(self, command, subdir=None):
+    def exec_in_config_repo_directory(self, command, subdir=None):
         if subdir is not None:
-            return self.execute_in_directory('~/Source/robot1/{0}'.format(subdir), command)
-        return self.execute_in_directory('~/Source/robot1', command)
+            return self.execute_in_directory('~/Source/configure-it-oot/{0}'.format(subdir), command)
+        return self.execute_in_directory('~/Source/configure-it-oot', command)
 
     def exec_in_robot1_ros_directory(self, command, subdir=None):
         if subdir is not None:
             return self.execute_in_directory('~/Source/robot1-ros/{0}'.format(subdir), command)
         return self.execute_in_directory('~/Source/robot1-ros', command)
+
+    def exec_in_robot1_directory(self, command, subdir=None):
+        if subdir is not None:
+            return self.execute_in_directory('~/Source/robot1/{0}'.format(subdir), command)
+        return self.execute_in_directory('~/Source/robot1', command)
 
     def exec_in_source_directory(self, command):
         return self.execute_in_directory('~/Source/', command)
@@ -214,7 +221,7 @@ class RobotDeploy(RobotCxn):
     def install_ros(self):
         self.exec_in_robot1_ros_directory(lambda slf:
                                           slf.execute_script_current_folder('configure_helpers.sh'))
-        self.sudo_try_do('bash ~/Source/robot1-ros/install_ros/install_ros_complete.sh')
+        self.sudo_try_do('bash ~/Source/configure-it-oot/install_ros/install_ros_complete.sh')
         self.sudo_try_do('rosdep fix-permissions')
         self.run('rosdep update')
 
@@ -274,7 +281,7 @@ class RobotDeploy(RobotCxn):
         self.sudo_try_do('apt autoremove -y')
 
 
-def prep_vic20():
+def prep_rpi():
     vic20_cxn = connect_vic20(os.environ.get('ROBOT_SUDO_PASSWORD'))
     vic20_cxn.apt_update()
     vic20_cxn.apt_get_install('openjdk-8-jdk')
@@ -300,18 +307,18 @@ def connect_vic20(password=None):
     return rcxn
 
 
-def connect_rpi2():
-    rcxn = RobotDeploy('192.168.1.13', 'robot1')
-    return rcxn
-
-
-def connect_rpi1():
-    rcxn = RobotDeploy('192.168.1.14', 'robot1')
+def connect_rpi(last_octet):
+    rcxn = RobotDeploy('192.168.1.{0}'.format(last_octet), 'robot1')
     return rcxn
 
 
 if __name__ == '__main__':
-    pi_rcxn = connect_rpi1()
+    args = sys.argv
+    if len(args) < 2:
+        raise IndexError('Last Octet required for IP')
+    ip_octet_4 = sys.argv[1]
+
+    pi_rcxn = connect_rpi(last_octet=ip_octet_4)
     pi_rcxn.update_sources()
     pi_rcxn.install_arduino()
 

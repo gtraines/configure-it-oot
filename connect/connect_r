@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+
+RPI_OCTET_4=${1}
+RPI_IP=192.168.1.${RPI_OCTET_4}
+echo "Connecting to ${RPI_IP}"
+
+ssh -X -l robot1 ${RPI_IP}
