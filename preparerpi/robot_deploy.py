@@ -204,38 +204,44 @@ class RobotCxn(RemoteCxn):
 class RobotDeploy(RobotCxn):
 
     def one_time_setup(self):
+        self.kill_existing_dpkg_lock()
         self.apt_update()
         self.remove_preinstalled_ros_packages()
         self.install_git()
         self.get_source_repos_first_time()
         self.install_ros()
+        self.install_arduino()
 
     def get_source_repos_first_time(self):
         self.create_dir_in_user_home('Source')
-
+        self.exec_in_source_directory(lambda slf:
+                                      slf.clone_my_repo('configure-it-oot'))
         self.exec_in_source_directory(lambda slf:
                                       slf.clone_my_repo('robot1'))
         self.exec_in_source_directory(lambda slf:
                                       slf.clone_my_repo('robot1-ros'))
 
     def install_ros(self):
-        self.exec_in_robot1_ros_directory(lambda slf:
-                                          slf.execute_script_current_folder('configure_helpers.sh'))
-        self.sudo_try_do('bash ~/Source/configure-it-oot/install_ros/install_ros_complete.sh')
+        self.exec_in_config_repo_directory(lambda slf: slf.set_file_as_executable('install_ros_complete.sh'), 'ros')
+
+        self.sudo_try_do('bash ~/Source/configure-it-oot/ros/install_ros_complete.sh')
         self.sudo_try_do('rosdep fix-permissions')
         self.run('rosdep update')
 
     def install_arduino(self):
-        self.apt_get_install('openjdk-8-jdk')
+        self.apt_get_install('openjdk-11-jdk')
         self.apt_get_install('ant')
         self.apt_get_install('avr-libc')
         self.apt_get_install('binutils-avr')
         self.apt_get_install('avrdude')
         self.apt_get_install('gcc-avr')
-
-        self.try_do(lambda slf: slf.run_with_password('bash ~/Source/robot1/scripts/install_arduino.sh'))
+        self.exec_in_config_repo_directory(lambda slf: slf.set_file_as_executable('install_arduino.sh'), 'arduino')
+        self.exec_in_config_repo_directory(lambda slf:
+                                           slf.try_do(lambda slf_inst:
+                                                      slf_inst.run_with_password('install_arduino.sh')), 'arduino')
 
     def update_sources(self):
+        self.exec_in_config_repo_directory(lambda slf: slf.git_update_current_dir())
         self.exec_in_robot1_directory(lambda slf: slf.git_update_current_dir())
         self.exec_in_robot1_ros_directory(lambda slf: slf.git_update_current_dir())
 
@@ -281,32 +287,6 @@ class RobotDeploy(RobotCxn):
         self.sudo_try_do('apt autoremove -y')
 
 
-def prep_rpi():
-    vic20_cxn = connect_vic20(os.environ.get('ROBOT_SUDO_PASSWORD'))
-    vic20_cxn.apt_update()
-    vic20_cxn.apt_get_install('openjdk-8-jdk')
-    vic20_cxn.install_git()
-
-    vic20_cxn.go_to_directory('Source')
-    vic20_cxn.git_clone('https://github.com/gtraines/robot1.git')
-    vic20_cxn.git_clone('https://github.com/gtraines/robot1-ros.git')
-    vic20_cxn.go_to_directory('~/Source/robot1-ros')
-    vic20_cxn._conn.run('chmod +x configure_helpers.sh')
-    vic20_cxn._conn.run('./configure_helpers.sh')
-    vic20_cxn.go_to_directory('~/Source/robot1-ros/install_ros/')
-    vic20_cxn._conn.run('./install_ros_complete.sh')
-
-    vic20_cxn.create_dir_in_user_home('arduino-1.8.5')
-    vic20_cxn._conn.run('wget -O arduino-1.8.5.tar.xz https://github.com/arduino/Arduino/releases/download/1.8.5/Arduino-1.8.5.tar.xz')
-    vic20_cxn._conn.run('unxz arduino-1.8.5.tar.xz')
-
-
-def connect_vic20(password=None):
-    rcxn = RemoteCxn('192.168.1.10', 'robot1v', password=password)
-
-    return rcxn
-
-
 def connect_rpi(last_octet):
     rcxn = RobotDeploy('192.168.1.{0}'.format(last_octet), 'robot1')
     return rcxn
@@ -320,5 +300,6 @@ if __name__ == '__main__':
 
     pi_rcxn = connect_rpi(last_octet=ip_octet_4)
     pi_rcxn.update_sources()
-    pi_rcxn.install_arduino()
+    pi_rcxn.install_ros()
+    #pi_rcxn.one_time_setup()
 
