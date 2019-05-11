@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
+
+# Pass in ROS distro
+if [[ ${#} -lt 1 ]]; then
+	echo "Missing argument(s): ros_distribution; ex: kinetic"
+	exit 1
+fi
+ROS_DISTRO=${1}
+
 sudo apt-get update
-sudo apt-get install ros-melodic-desktop-full
+sudo apt-get install ros-${ROS_DISTRO}-desktop-full
 sudo rosdep init
 rosdep update
-echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
-echo "export PYTHONPATH=/usr/lib/python2.7/dist-packages:$PYTHONPATH"
-source ~/.bashrc

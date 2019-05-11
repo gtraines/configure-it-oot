@@ -203,13 +203,13 @@ class RobotCxn(RemoteCxn):
 
 class RobotDeploy(RobotCxn):
 
-    def one_time_setup(self):
+    def one_time_setup(self, ros_distro):
         self.kill_existing_dpkg_lock()
         self.apt_update()
         self.remove_preinstalled_ros_packages()
         self.install_git()
         self.get_source_repos_first_time()
-        self.install_ros()
+        self.install_ros(ros_distro)
         self.install_arduino()
 
     def get_source_repos_first_time(self):
@@ -221,10 +221,13 @@ class RobotDeploy(RobotCxn):
         self.exec_in_source_directory(lambda slf:
                                       slf.clone_my_repo('robot1-ros'))
 
-    def install_ros(self):
+    def install_ros(self, ros_distro):
         self.exec_in_config_repo_directory(lambda slf: slf.set_file_as_executable('install_ros_complete.sh'), 'ros')
 
-        self.sudo_try_do('bash ~/Source/configure-it-oot/ros/install_ros_complete.sh')
+        self.exec_in_config_repo_directory(
+            lambda slf:
+            slf.sudo_try_do('bash install_ros_complete.sh {0}'.format(ros_distro)), 'ros')
+
         self.sudo_try_do('rosdep fix-permissions')
         self.run('rosdep update')
 
@@ -294,12 +297,11 @@ def connect_rpi(last_octet):
 
 if __name__ == '__main__':
     args = sys.argv
-    if len(args) < 2:
+    if len(args) < 3:
         raise IndexError('Last Octet required for IP')
     ip_octet_4 = sys.argv[1]
+    ros_distro_req = sys.argv[2]
 
     pi_rcxn = connect_rpi(last_octet=ip_octet_4)
-    pi_rcxn.update_sources()
-    pi_rcxn.install_ros()
-    #pi_rcxn.one_time_setup()
+    pi_rcxn.one_time_setup(ros_distro_req)
 
